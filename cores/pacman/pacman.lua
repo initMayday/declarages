@@ -130,7 +130,7 @@ function Run.execute(Configuration)
     local PackagesToInstallOfficial = Common.subtract_arrays(OfficialNameOnlyPackages, InstalledPackages);
 
     for Index, Package in ipairs(PackagesToInstallOfficial) do
-        if not Common.execute_command("pacman -Qq | grep ".. Package) == "" then
+        if Common.execute_command("pacman -Qq | grep ".. Package) ~= "" then
             print(Colours.Bold.. "[LOG] Marking ".. Package .. " install reason as explicit".. Colours.Reset);
             Common.execute_command(Configuration.Settings.SuperuserCommand.. "pacman -D --asexplicit ".. Package);
             table.remove(PackagesToInstallOfficial, Index);
