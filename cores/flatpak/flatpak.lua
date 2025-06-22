@@ -25,8 +25,7 @@ function Run.execute(Configuration)
             io.write(Value.. " ");
             RemovalString = RemovalString.. " " ..Value;
         end
-        print("");
-        print(RemovalString)
+        print("")
         Common.execute_command(RemovalString);
         io.write(Colours.Green.. Colours.Bold.. "[LOG] Removed Packages: ");
         for Index, Value in ipairs(PackagesToRemove) do

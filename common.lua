@@ -132,4 +132,13 @@ function Commands.check_package_warn_limit(PackagesTableToRemove, PackageWarnLim
     return Confirmation;
 end
 
+function Commands.index_of(Table, Needle)
+    for Index, Value in pairs(Table) do
+        if Needle == Value then
+            return Index;
+        end
+    end
+    Commands.fake_error("Unable to find index of Value: ".. Needle .." in Table: ".. Table, -2)
+end
+
 return Commands;
