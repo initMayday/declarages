@@ -10,6 +10,9 @@ if arg[1] ~= nil then
     FileName = arg[1]:match("([^/]+)$"):gsub("%.lua$", "")
     local Directory = arg[1]:match("^(.*)/").. "/"
     package.path = package.path .. ";" .. Directory .. "/?.lua"
+else
+    print("[ERROR] You must specify the path of the configuration file")
+    os.exit(-1)
 end
 
 local Configuration = require(FileName);

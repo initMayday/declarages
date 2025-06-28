@@ -57,7 +57,7 @@ fn main() {
                 pb.finish_with_message(format!("[LOG] Needs Update: {} [{:?}ms], Old: {}, New: {}", package, start.elapsed().as_millis(), current_version, new_version));
                 return Some(package);
             } else {
-                pb.finish_with_message(format!("[LOG] Already Up to Date: {} [{:?}ms]", package, start.elapsed().as_millis()));
+                pb.finish_with_message(format!("[LOG] Already Up to Date: {} [{}] [{:?}ms]", package, new_version, start.elapsed().as_millis()));
                 return None;
             }
         });
