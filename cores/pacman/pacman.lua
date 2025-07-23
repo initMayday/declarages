@@ -66,7 +66,7 @@ function Run.execute(Configuration)
 
     --> Remove installed packages that are no longer required
     local CombinedNameOnlyPackages = convert_to_sub_package_names(Common.merge_arrays(Configuration.Pacman.Official, Configuration.Pacman.Custom))
-    local PackagesToRemove = Common.subtract_arrays(InstalledPackages, CombinedNameOnlyPackages);
+    local PackagesToRemove = Common.subtract_arrays(Common.subtract_arrays(InstalledPackages, CombinedNameOnlyPackages), Configuration.Pacman.Ignore);
     local Confirmation = Common.check_package_warn_limit(PackagesToRemove, Configuration.Settings.WarnOnPackageRemovalAbove);
 
     if Confirmation == true and #PackagesToRemove > 0 then
