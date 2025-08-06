@@ -46,8 +46,11 @@ fn main() {
             pb.set_message(format!("[LOG] Pulling: {} [{:?}ms]", package, start.elapsed().as_millis()));
             Command::new("bash").arg("-c").arg("cd ".to_owned() + &package + "&& git reset --hard && git pull").output().expect("failedtoexec");
             pb.set_message(format!("[LOG] Applying Pull: {} [{:?}ms]", package, start.elapsed().as_millis()));
-            Command::new("bash").arg("-c").arg("cd ".to_owned() + &package + "&& makepkg -o").output().expect("failedtoexec");
-
+            let out = Command::new("bash").arg("-c").arg("cd ".to_owned() + &package + "&& makepkg -o").output().expect("failedtoexec");
+            if !out.status.success() {
+                pb.finish_with_message(format!("[ERROR] Failed to makepkg, perhaps some make dependencies are missing? If so, explicitly list them in official packages: {} [{:?}ms], Error: {}", package, start.elapsed().as_millis(), String::from_utf8_lossy(&out.stderr)));
+                return None;
+            }
             pb.set_message(format!("[LOG] Getting New Version: {} [{:?}ms]", package, start.elapsed().as_millis()));
             let mut new_version = String::from_utf8(Command::new("bash").arg("-c").arg("cd ".to_owned() + &package + "&& makepkg --printsrcinfo | awk -F ' = ' '/pkgver/ {print $2}'").output().expect("failedtoexec").stdout).unwrap();
 
