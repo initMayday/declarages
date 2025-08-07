@@ -20,7 +20,7 @@ end
 
 local function convert_to_base_package_names(Array)
     local NamedPackages = {}
-    for Index, Value in ipairs(Array) do
+    for _, Value in ipairs(Array) do
         local RealPackage = get_base_packages(Value);
         table.insert(NamedPackages, RealPackage);
     end
@@ -29,7 +29,7 @@ end
 
 local function convert_to_sub_package_names(Array)
     local NamedPackages = {}
-    for Index, Value in ipairs(Array) do
+    for _, Value in ipairs(Array) do
         local RealPackage = get_sub_packages(Value);
         if type(RealPackage) == "table" then
             NamedPackages = Common.merge_arrays(NamedPackages, RealPackage);
@@ -48,14 +48,14 @@ function Run.execute(Configuration)
     if Continue and #UnusedDeps > 0 then
         local RemovalString = "pacman -Rns --noconfirm";
         io.write(Colours.Bold.. "[LOG] Removing Unused Dependencies: ".. Colours.Reset)
-        for Index, Value in ipairs(UnusedDeps) do
+        for _, Value in ipairs(UnusedDeps) do
             io.write(Value.. " ");
             RemovalString = RemovalString.. " " ..Value;
         end
         print("");
         Common.execute_command(Configuration.Settings.SuperuserCommand.. RemovalString);
         io.write(Colours.Green.. Colours.Bold.. "[LOG] Removed Packages: ");
-        for Index, Value in ipairs(UnusedDeps) do
+        for _, Value in ipairs(UnusedDeps) do
             io.write(Value.. " ");
         end
         io.write(Colours.Reset.. "\n");
@@ -65,7 +65,7 @@ function Run.execute(Configuration)
     local InstalledPackages = Common.raw_list_to_table(Common.execute_command("pacman -Qeq"));
 
     --> Remove installed packages that are no longer required
-    local CombinedNameOnlyPackages = convert_to_sub_package_names(Common.merge_arrays(Configuration.Pacman.Official, Configuration.Pacman.Custom))
+    local CombinedNameOnlyPackages = convert_to_sub_package_names(Common.merge_arrays(Configuration.Pacman.Primary, Configuration.Pacman.Custom))
     local PackagesToRemove = Common.subtract_arrays(Common.subtract_arrays(InstalledPackages, CombinedNameOnlyPackages), Configuration.Pacman.Ignore);
     local Confirmation = Common.check_package_warn_limit(PackagesToRemove, Configuration.Settings.WarnOnPackageRemovalAbove);
 
@@ -79,7 +79,7 @@ function Run.execute(Configuration)
                 if Package ~= "" then
                     --> Check if the package that depends on this package is part of the packages we are removing
                     local Hit = false;
-                    for Index2, Value2 in ipairs(PackagesToRemove) do
+                    for _, Value2 in ipairs(PackagesToRemove) do
                         if Package == Value2 then
                             Hit = true;
                         end
@@ -87,7 +87,7 @@ function Run.execute(Configuration)
                    if Hit == false then
                         CanBeRemoved = false;
                         break;
-                   end 
+                   end
                 end
             end
 
@@ -104,14 +104,14 @@ function Run.execute(Configuration)
         if #PackagesToRemove > 0 then
             local RemovalString = "pacman -Rns --noconfirm";
             io.write(Colours.Bold.. "[LOG] Removing: ".. Colours.Reset)
-            for Index, Value in ipairs(PackagesToRemove) do
+            for _, Value in ipairs(PackagesToRemove) do
                 io.write(Value.. " ");
                 RemovalString = RemovalString.. " " ..Value;
             end
             print("");
             os.execute(Configuration.Settings.SuperuserCommand.. RemovalString);
             io.write(Colours.Green.. Colours.Bold.. "[LOG] Removed Packages: ");
-            for Index, Value in ipairs(PackagesToRemove) do
+            for _, Value in ipairs(PackagesToRemove) do
                 io.write(Value.. " ");
             end
             io.write(Colours.Reset.. "\n");
@@ -119,33 +119,33 @@ function Run.execute(Configuration)
     end
 
     --> Delete Old Custom Package directories
-    local InstalledCustomPackages = Common.raw_list_to_table(Common.execute_command(Configuration.Settings.SuperuserCommand.. "ls ".. Configuration.Pacman.CustomLocation));
+    local InstalledCustomPackages = Common.raw_list_to_table(Common.execute_command(Configuration.Settings.SuperuserCommand.. "ls ".. Configuration.Pacman.Settings.CustomLocation));
     local UnrequiredCustom = Common.subtract_arrays(InstalledCustomPackages, convert_to_base_package_names(Configuration.Pacman.Custom))
-    for Index, Value in ipairs(UnrequiredCustom) do
-        Common.remove_path(Configuration.Pacman.CustomLocation.."/"..Value, Configuration.Settings.SuperuserCommand, Configuration.Settings.AddPathConfirmation);
+    for _, Value in ipairs(UnrequiredCustom) do
+        Common.remove_path(Configuration.Pacman.Settings.CustomLocation.."/"..Value, Configuration.Settings.SuperuserCommand, Configuration.Settings.AddPathConfirmation);
     end
 
     --> Install packages we don't have
-    local OfficialNameOnlyPackages = convert_to_base_package_names(Configuration.Pacman.Official);
-    local PackagesToInstallOfficial = Common.subtract_arrays(OfficialNameOnlyPackages, InstalledPackages);
+    local PrimaryNameOnlyPackages = convert_to_base_package_names(Configuration.Pacman.Primary);
+    local PackagesToInstallPrimary = Common.subtract_arrays(PrimaryNameOnlyPackages, InstalledPackages);
 
-    for Index, Package in ipairs(PackagesToInstallOfficial) do
+    for Index, Package in ipairs(PackagesToInstallPrimary) do
         --> Check if the package is already on our system
         if Common.execute_command("pacman -Qq | grep -w".. Package) ~= "" then --> Grep the full word!
             print(Colours.Bold.. "[LOG] Marking ".. Package .. " install reason as explicit".. Colours.Reset);
             Common.execute_command(Configuration.Settings.SuperuserCommand.. "pacman -D --asexplicit ".. Package);
-            table.remove(PackagesToInstallOfficial, Index);
+            table.remove(PackagesToInstallPrimary, Index);
         end
     end
 
     local InstallString = "pacman -Syu --noconfirm";
-    if #PackagesToInstallOfficial > 0 then
+    if #PackagesToInstallPrimary > 0 then
         io.write(Colours.Bold.. Colours.Cyan.. "[LOG] Upgrading System & Attempting to install: ".. Colours.Reset);
-        for Index, Value in ipairs(PackagesToInstallOfficial) do
+        for _, Value in ipairs(PackagesToInstallPrimary) do
             io.write(Value.. " ");
             InstallString = InstallString .." ".. Value;
         end
-        print(""); 
+        print("");
     else
         print(Colours.Bold.. Colours.Cyan.."[LOG] Upgrading System".. Colours.Reset);
     end
@@ -154,21 +154,21 @@ function Run.execute(Configuration)
     print(Colours.Bold.. Colours.Green.. "[LOG] Completed Installations".. Colours.Reset);
     print(Colours.Bold.. Colours.Cyan.. "[LOG] Upgrading Custom Packages".. Colours.Reset);
 
-    Common.create_path(Configuration.Pacman.CustomLocation, "", Configuration.Settings.AddPathConfirmation);
+    Common.create_path(Configuration.Pacman.Settings.CustomLocation, "", Configuration.Settings.AddPathConfirmation);
 
     --> Updating existing AUR packages via Rust Program (parallel running)
-    os.execute(Common.get_script_dir().. "/cores/pacman/custom_parallel/target/release/custom_parallel ".. Configuration.Pacman.CustomLocation);
+    os.execute(Common.get_script_dir().. "/cores/pacman/custom_parallel/target/release/custom_parallel ".. Configuration.Pacman.Settings.CustomLocation);
 
     --> Install AUR packages we don't have
-    for Index, Value in ipairs(Configuration.Pacman.Custom) do
+    for _, Value in ipairs(Configuration.Pacman.Custom) do
         local SubPackages = get_sub_packages(Value);
         if type(SubPackages) ~= "table" then
             SubPackages = { SubPackages };
         end
 
         local Hits = 0;
-        for Index2, Value2 in ipairs(SubPackages) do
-            for Index3, Value3 in ipairs(InstalledPackages) do
+        for _, Value2 in ipairs(SubPackages) do
+            for _, Value3 in ipairs(InstalledPackages) do
                 if Value2 == Value3 then
                     Hits = Hits + 1;
                     break;
@@ -187,9 +187,9 @@ function Run.execute(Configuration)
                 end
             end
 
-            Common.remove_path(Configuration.Pacman.CustomLocation.."/"..DirName, Configuration.Settings.SuperuserCommand, Configuration.Settings.RemovePathConfirmation);
-            Common.execute_command("cd ".. Configuration.Pacman.CustomLocation.." && git clone ".. Url);
-            Common.execute_command("cd ".. Configuration.Pacman.CustomLocation.."/"..DirName.."/".."&& makepkg -si --noconfirm");
+            Common.remove_path(Configuration.Pacman.Settings.CustomLocation.."/"..DirName, Configuration.Settings.SuperuserCommand, Configuration.Settings.RemovePathConfirmation);
+            Common.execute_command("cd ".. Configuration.Pacman.Settings.CustomLocation.." && git clone ".. Url);
+            Common.execute_command("cd ".. Configuration.Pacman.Settings.CustomLocation.."/"..DirName.."/".."&& makepkg -si --noconfirm");
             print(Colours.Green.. Colours.Bold.. "[LOG] Completed: ".. DirName.. Colours.Reset);
         end
     end
