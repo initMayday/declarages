@@ -7,14 +7,14 @@ function Run.execute(Configuration)
     local GetPackagesCommand = [[nix profile list | grep Name | cut -d':' -f2- | sed 's/^ *//' | sed 's/\x1b\[[0-9;]*m//g']]
     local InstalledPackages = Common.raw_list_to_table(Common.execute_command(GetPackagesCommand));
 
-    --> Values that are a table have index 1, the install name and index 2, the installed name.
-    --> Eg. {"kdePackages.konsole", "konsole"}, the former name is needed to install the package
+    --> Values that are a table have two string values, the Base and Sub values.
+    --> Eg. {Base = "kdePackages.konsole", Sub  = "konsole"}, the former name is needed to install the package
     --> and once installed, the latter name is the name of the package on the system
     --> Hence, we just get the name of the package on the system
     local ConfigurationProperNames = {};
-    for _, Value in pairs(Configuration.Nix) do
+    for _, Value in pairs(Configuration.Nix.Primary) do
         if type(Value) == "table" then
-            table.insert(ConfigurationProperNames, Value[2]);
+            table.insert(ConfigurationProperNames, Value.Sub);
         else
             table.insert(ConfigurationProperNames, Value);
         end
@@ -56,14 +56,14 @@ function Run.execute(Configuration)
     --for index, value in pairs(InstalledPackages) do print("Already Installed: ".. value); end
     --for index, value in pairs(PackagesToInstall) do print("NEEDS: ".. value); end
 
-    local InstallString = "nix profile install";
+    local InstallString = "nix profile add";
     if #PackagesToInstall > 0 then
         io.write(Colours.Bold.. Colours.Cyan.. "[LOG] Attempting to install: ".. Colours.Reset);
         for _, Value in ipairs(PackagesToInstall) do
             local OriginalIndex = Common.index_of(ConfigurationProperNames, Value)
             --> Convert the package on system name back to the install name. The works because we the indexes of the ConfigurationProperNames and Nix table line up
-            if type(Configuration.Nix[OriginalIndex]) == "table" then
-                Value = Configuration.Nix[OriginalIndex][1];
+            if type(Configuration.Nix.Primary[OriginalIndex]) == "table" then
+                Value = Configuration.Nix.Primary[OriginalIndex].Base;
             end
             io.write(Value.. " ");
             InstallString = InstallString .." nixpkgs#".. Value;
