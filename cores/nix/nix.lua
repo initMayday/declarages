@@ -21,8 +21,7 @@ function Run.execute(Configuration)
     end
 
     --for index, value in pairs(ConfigurationProperNames) do print("Wants: "..value) end
-
-    local PackagesToRemove = Common.subtract_arrays(InstalledPackages, ConfigurationProperNames);
+    local PackagesToRemove = Common.subtract_arrays(Common.subtract_arrays(InstalledPackages, ConfigurationProperNames), Configuration.Nix.Ignore);
     local Confirmation = Common.check_package_warn_limit(PackagesToRemove, Configuration.Settings.WarnOnPackageRemovalAbove);
 
     if Confirmation == true and #PackagesToRemove > 0 then

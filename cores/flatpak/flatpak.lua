@@ -15,7 +15,7 @@ function Run.execute(Configuration)
         end
     end
 
-    local PackagesToRemove = Common.subtract_arrays(InstalledPackages, Configuration.Flatpak.Primary);
+    local PackagesToRemove = Common.subtract_arrays(Common.subtract_arrays(InstalledPackages, Configuration.Flatpak.Primary), Configuration.Flatpak.Ignore);
     local Confirmation = Common.check_package_warn_limit(PackagesToRemove, Configuration.Settings.WarnOnPackageRemovalAbove);
 
     if Confirmation == true and #PackagesToRemove > 0 then
