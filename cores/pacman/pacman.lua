@@ -131,7 +131,7 @@ function Run.execute(Configuration)
 
     for Index, Package in ipairs(PackagesToInstallPrimary) do
         --> Check if the package is already on our system
-        if Common.execute_command("pacman -Qq | grep -w".. Package) ~= "" then --> Grep the full word!
+        if Common.execute_command("pacman -Qq | grep -w ".. Package) ~= "" then --> Grep the full word!
             print(Colours.Bold.. "[LOG] Marking ".. Package .. " install reason as explicit".. Colours.Reset);
             Common.execute_command(Configuration.Settings.SuperuserCommand.. "pacman -D --asexplicit ".. Package);
             table.remove(PackagesToInstallPrimary, Index);
