@@ -17,6 +17,7 @@ local Configuration = {
         SuperuserCommand = "sudo";
         AddPathConfirmation = true;
         RemovePathConfirmation = true;
+        Purchased = false;
         Cores = { "Pacman", "Flatpak", "Nix" }
     }
 }
@@ -26,9 +27,8 @@ local Configuration = {
 - RemovePathConfirmation:  Will ask you to remove the creation of the path at the specified directory (bool: true / false)
 - SuperuserCommand: Prepends the command to the bash commands that the program runs (string: eg. "sudo", "doas")
 - RandomActivationMessage: Enables or disables the random message upon running the program to purchase a license (bool: true / false)
-- Licensed: Bool you set to mark the program as licensed, disables activation message if true (bool: true / false) - Same functionality-wise to RandomActivationMessage
+- Purchased: Nudge to purchase the program, if it is useful to you. This is purely visual and the program never reads this variable.
 - Cores: List the cores you want to use & run, see the options for cores below (string: array)
-
 
 **Pacman Core**
 ```lua
@@ -107,5 +107,5 @@ local Configuration = {
 PKGBUILD (Arch)
 
 ##  Licensing
-Declarages utilises the CC BY-NC-SA 4.0 license, where the share-alike term refers to also sharing the source code. Please see [REPO NAME] for more details.
-You will be able to purchase a license at a later date.
+Declarages utilises the CC BY-NC-SA 4.0 license, following this [interpretation](https://github.com/initMayday/licensing/blob/master/CC-BY-NC-SA.md).
+You can purchase the program for 5GBP (or equivalent) [here](https://github.com/initMayday/licensing/blob/master/payment.md).`

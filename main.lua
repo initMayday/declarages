@@ -20,13 +20,6 @@ local Colours = require("colours")
 
 if Configuration.Settings.SuperuserCommand ~= "" then Configuration.Settings.SuperuserCommand = Configuration.Settings.SuperuserCommand.. " "; end
 
---<> Activation Message
-if Configuration.Settings.RandomActivationMessage == true and Configuration.Settings.Licensed == false then
-    if math.random(0, 6) == 1 then -- 1 in 6 chance of showing
-        print(Colours.Cyan .."[ACTIVATION] If you find this product useful, please purchase a license from: https://ko-fi.com/s/f7ac787074, it really helps!".. Colours.Reset);
-    end
-end
-
 print(Colours.Blue.. "[ENTER] Beginning".. Colours.Reset);
 for Index, Value in pairs(Configuration["Settings"]["Cores"]) do
     local StartTime = Common.execute_command(Common.DateCommand);
