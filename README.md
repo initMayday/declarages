@@ -104,7 +104,7 @@ local Configuration = {
 - Ignore Table: Packages that are unmanaged by this core. These packages will be ignored, and not processed.
 
 ## Packages
-PKGBUILD (Arch)
+[Arch User Repository](https://aur.archlinux.org/packages/declarages)
 
 ##  Licensing
 Declarages utilises the CC BY-NC-SA 4.0 license, following this [interpretation](https://github.com/initMayday/licensing/blob/master/CC-BY-NC-SA.md).
