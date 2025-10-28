@@ -3,6 +3,13 @@ local Commands = {}
 
 Commands.DateCommand = "date +%s%N | cut -b1-13"
 
+function Commands.default_value(variable, default)
+    if variable == nil then
+        return default
+    else
+        return variable
+    end
+end
 
 function Commands.round_to_2dp(Number)
     return tonumber(string.format("%.2f", Number))
@@ -18,6 +25,43 @@ function Commands.shallow_copy(Table)
         NewTable[Index] = Value;
     end
     return NewTable;
+end
+
+function Commands.luv_execute_command(Luv, Command, call_back, SeeOut, SeeErr)
+    local StdOut = Luv.new_pipe(false)
+    local StdErr = Luv.new_pipe(false)
+    SeeOut = Commands.default_value(SeeOut, false)
+    SeeErr = Commands.default_value(SeeErr, true)
+
+    local Output = {}
+    local Error = {}
+
+    local Handle
+    Handle = Luv.spawn("sh", {
+        args = { "-c", Command },
+        stdio = { nil, StdOut, StdErr },
+    }, function(Code, Signal)
+        StdOut:close()
+        StdErr:close()
+        Handle:close()
+        if call_back then call_back(Code, Signal, table.concat(Output), table.concat(Error)) end
+    end)
+
+    Luv.read_start(StdOut, function(err, data)
+        assert(not err, err)
+        if data then
+            if SeeOut then io.write(data) end
+            table.insert(Output, data)
+        end
+    end)
+
+    Luv.read_start(StdErr, function(err, data)
+        assert(not err, err)
+        if data then
+            if SeeErr then io.stderr:write(data) end
+            table.insert(Error, data)
+        end
+    end)
 end
 
 function Commands.execute_command(Command)
@@ -139,6 +183,11 @@ function Commands.index_of(Table, Needle)
         end
     end
     Commands.fake_error("Unable to find index of Value: ".. Needle .." in Table: ".. Table, -2)
+end
+
+function Commands.get_entries_in_path(Directory)
+    local RawList = Commands.execute_command("ls ".. Directory);
+    return Commands.raw_list_to_table(RawList);
 end
 
 return Commands;

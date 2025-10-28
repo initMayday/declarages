@@ -1,7 +1,0 @@
-target/debug/*
-
-target/release/*
-!target/release/custom_parallel
-target/.rustc_info.json
-target/CACHEDIR.TAG
-Cargo.lock

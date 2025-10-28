@@ -1,5 +1,8 @@
+local Luv = require("luv")
+local Json = require("lunajson")
 local Common = require("common")
 local Colours = require("colours")
+local PrintTable = require("print_table")
 local Run = {};
 
 local function get_sub_packages(input)
@@ -38,6 +41,56 @@ local function convert_to_sub_package_names(Array)
         end
     end
     return NamedPackages;
+end
+
+local function install_custom_package(SuperuserCommand, Location, Package)
+    local ChDir = "cd ".. Location.."/".. Package.Base.. " && ";
+    local _Ok, _Type, Code = os.execute(ChDir.. Package.BuildCmd)
+     if Code == 0 then
+        print("[LOG] Built: ".. Package.Base)
+    else
+        print("[LOG] Failed to build: ".. Package.Base)
+        return
+    end
+
+    local BuiltFiles = Common.get_entries_in_path(Location.. "/".. Package.Base)
+    local SubPackagesToInstall = {}
+
+    for _Index, Sub in ipairs(Package.Sub) do
+        local Matches = {}
+        for _Index, Value in ipairs(BuiltFiles) do
+            print(Value, Sub)
+            if string.find(Value, Sub, 1, true) and string.find(Value, "pkg.tar", 1, true) then
+                table.insert(Matches, Value)
+            end
+        end
+        
+        if #Matches == 0 then
+            print(Colours.Red.. "[FAIL] Could not find matching sub-package for: ".. Sub.. Colours.Reset)
+        else
+            local SmallestName = ""
+            local SmallestLength = math.huge
+            for _Index, Value in ipairs(Matches) do
+                if #Value < SmallestLength then
+                    SmallestLength = #Value
+                    SmallestName = Value
+                end
+            end
+            table.insert(SubPackagesToInstall, SmallestName)
+        end
+    end
+
+    local FinalString = ""
+    for _Index, Value in ipairs(SubPackagesToInstall) do
+        FinalString = FinalString.. string.format("'%s'", Value)
+    end
+
+    local _Ok, _Type, Code = os.execute(ChDir.. SuperuserCommand.. "pacman -U ".. FinalString)
+    if Code == 0 then
+        print(Colours.Bold.. Colours.Green.. "[LOG] Completed: ".. Package.Base.. Colours.Reset)
+    else
+        print(Colours.Reset.. "[LOG] Failed: ".. Package.Base.. Colours.Reset)
+    end
 end
 
 function Run.execute(Configuration)
@@ -152,22 +205,146 @@ function Run.execute(Configuration)
 
     os.execute(Configuration.Settings.SuperuserCommand.. InstallString);
     print(Colours.Bold.. Colours.Green.. "[LOG] Completed Installations".. Colours.Reset);
+
+    --[[ 
+        START CUSTOM 
+    ]]--
     print(Colours.Bold.. Colours.Cyan.. "[LOG] Upgrading Custom Packages".. Colours.Reset);
-
     Common.create_path(Configuration.Pacman.Settings.CustomLocation, "", Configuration.Settings.AddPathConfirmation);
+ 
+    --> Convert Custom Packages ALL to the same format
+    local NewTable = {}
+    for Index, Value in ipairs(Configuration.Pacman.Custom) do
+        if type(Value) ~= "table" then
+            Value = { Base = Value, Sub = { Value } }
+        end
 
-    --> Updating existing AUR packages via Rust Program (parallel running)
-    os.execute(Common.get_script_dir().. "/cores/pacman/custom_parallel/target/release/custom_parallel ".. Configuration.Pacman.Settings.CustomLocation);
+        --> If any special update commands are specified, disable RPC by default. Else, enable RPC
+        if Value.CloneCmd == nil and Value.UpdateRemoteCmd == nil and Value.VersionCmd == nil and Value.PrepareCmd == nil then
+            Value.RPC = Common.default_value(Value.RPC, true)
+        else
+            Value.RPC = Common.default_value(Value.RPC, false)
+        end
+        Value.CloneCmd = Common.default_value(Value.CloneCmd, "git clone ".. "https://aur.archlinux.org/"..Value.Base..".git")
+        Value.VersionCmd = Common.default_value(Value.VersionCmd, "source ./PKGBUILD && echo \"$pkgver\"")
+        Value.UpdateRemoteCmd = Common.default_value(Value.UpdateRemoteCmd, "git reset --hard && git pull")
+        Value.PrepareCmd = Common.default_value(Value.PrepareCmd, "makepkg -o")
+        Value.BuildCmd = Common.default_value(Value.BuildCmd, "makepkg -s --noconfirm")
+        table.insert(NewTable, Value)
+    end
+    Configuration.Pacman.Custom = NewTable
+
+    --> Updating existing AUR packages
+    local CustomOrderedList = Common.get_entries_in_path(Configuration.Pacman.Settings.CustomLocation);
+    local CustomList = {}
+
+    for Index, Value in ipairs(CustomOrderedList) do
+        for Index2, Value2 in ipairs(Configuration.Pacman.Custom) do
+            if Value == Value2.Base then
+                table.insert(CustomList, Value2)
+                break
+            end
+        end
+    end
+
+    --> Change directory, but save the directory so we can move back later..
+    local OriginalDir = Luv.cwd()
+    Luv.chdir(Configuration.Pacman.Settings.CustomLocation);
+
+    print("[LOG] Checking Updates")
+    local PackagesToUpdate = {}
+
+    for Index, Value in ipairs(CustomList) do
+        local ChDir = "cd ".. Value.Base.. " && ";
+        Common.luv_execute_command(Luv, ChDir ..Value.VersionCmd, function(Code, Signal, Output)
+            if Code == 0 then
+                local OriginalVersion = Output:sub(1, -2) --> Remove trailing \n
+
+                --> If RPC is enabled, make query to AUR
+                if Value.RPC == true then
+                    Common.luv_execute_command(Luv, string.format("curl -s 'https://aur.archlinux.org/rpc/v5/info?arg[]=%s'", Value.Base), function(Code, Signal, Output)
+                        if Code ~= 0 then
+                            print(Colours.Red.. "[FAIL : Code ".. Code .." ] Failed to curl RPC: ".. Value.Base, Output ..Colours.Reset)
+                            return
+                        end
+
+                        local Decoded = Json.decode(Output)
+                        if Decoded == nil then
+                            print(Colours.Red.. "[FAIL] Failed to decode RPC JSON: ".. Value.Base, Output .. Colours.Reset);
+                            return
+                        end
+
+                        if Decoded.resultcount == 0 then
+                            print(Colours.Red.. "[FAIL] Could not retrieve version from RPC: ".. Value.Base ..Colours.Reset);
+                            return
+                        end
+                        --PrintTable(Decoded)
+                        local Version = Decoded.results[1].Version:gsub("^%d+:", ""):gsub("%-[^-]+$", "")
+
+                        Common.luv_execute_command(Luv, "vercmp ".. OriginalVersion .." ".. Version, function(Code, Signal, Output)
+                            if Code ~= 0 then
+                                print(Colours.Red.. "[FAIL : Code ".. Code .." ] Failed to use vercmp to compare versions:", Value.Base, OriginalVersion, Version)
+                                return
+                            end
+                            Output = Output:sub(1, -2) --> Remove trailing \n
+                            if Output == "0" then
+                                print("[LOG] (RPC) Up to Date: ".. Value.Base)
+                            elseif Output == "1" then
+                                print(Colours.Yellow .."[WARNING] (RPC ".. OriginalVersion.. " : "..
+                                    Version.. ") Local Version is ahead of Remote: ".. Value.Base.. Colours.Reset)
+                            else
+                                print("[LOG] (RPC ".. OriginalVersion.. " : " ..Version..") Needs Update: ".. Value.Base)
+                                table.insert(PackagesToUpdate, Value)
+                            end
+                        end)
+                    end)
+                else
+                    --> If RPC is disabled, use manual versioning. This will be slower
+                    Common.luv_execute_command(Luv, ChDir ..Value.UpdateRemoteCmd, function(Code)
+                        if Code ~= 0 then
+                            print(Colours.Red .."[FAIL : Code ".. Code .."] Failed to update source from remote: ".. Value.Base.. Colours.Reset)
+                            return
+                        end
+                        Common.luv_execute_command(Luv, ChDir ..Value.PrepareCmd, function(Code)
+                            if Code ~= 0 then
+                                print(Colours.Red.. "[FAIL : Code ".. Code .."] Failed to prepare pacakge: ".. Value.Base.. Colours.Reset)
+                                return
+                            end
+                            Common.luv_execute_command(Luv, ChDir.. Value.VersionCmd, function(Code, Signal, Output)
+                                if Code ~= 0 then
+                                    print(Colours.Red.. "[FAIL : Code ".. Code .."] Could not determine new Version of: ".. Value.Base.. Colours.Reset)
+                                    return
+                                end
+                                local Version = Output:sub(1, -2) --> Remove trailing \n
+                                if OriginalVersion == Version then
+                                    print("[LOG] (Manual) Up to Date: ".. Value.Base)
+                                else
+                                    print("[LOG] (Manual ".. OriginalVersion.. " : " ..Version..") Needs Update: ".. Value.Base)
+                                    table.insert(PackagesToUpdate, Value)
+                                end
+                            end)
+                        end, false, false)
+                    end)
+                end
+            else
+                print(Colours.Red .."[FAIL : Code ".. Code .."] Could not determine original Version of ".. Value.Base.. Colours.Reset)
+            end
+        end)
+    end
+    Luv.run()
+
+    --> Change back to original working dir
+    Luv.chdir(OriginalDir)
+
+    for Index, Value in ipairs(PackagesToUpdate) do
+        print("[LOG] Updating: ".. Value.Base)
+        install_custom_package(Configuration.Settings.SuperuserCommand, Configuration.Pacman.Settings.CustomLocation, Value)
+    end
 
     --> Install AUR packages we don't have
     for _, Value in ipairs(Configuration.Pacman.Custom) do
-        local SubPackages = get_sub_packages(Value);
-        if type(SubPackages) ~= "table" then
-            SubPackages = { SubPackages };
-        end
-
         local Hits = 0;
-        for _, Value2 in ipairs(SubPackages) do
+        for _, Value2 in ipairs(Value.Sub) do
             for _, Value3 in ipairs(InstalledPackages) do
                 if Value2 == Value3 then
                     Hits = Hits + 1;
@@ -175,22 +352,14 @@ function Run.execute(Configuration)
                 end
             end
         end
-        if Hits ~= #SubPackages then --> We don't have (all) the package(s) installed, install the package
-            local DirName = get_base_packages(Value);
+        if Hits ~= #Value.Sub then --> We don't have (all) the package(s) installed, install the package
+            local DirName = Value.Base;
             print(Colours.Green.. Colours.Bold.. "[LOG] Installing: ".. DirName.. Colours.Reset);
 
-            --> Get the url, and extract it from the table if the package is a table
-            local Url = "https://aur.archlinux.org/"..DirName..".git";
-            if type(Value) == "table" then
-                if Value.Url ~= nil then
-                    Url = Value.Url;
-                end
-            end
-
-            Common.remove_path(Configuration.Pacman.Settings.CustomLocation.."/"..DirName, Configuration.Settings.SuperuserCommand, Configuration.Settings.RemovePathConfirmation);
-            Common.execute_command("cd ".. Configuration.Pacman.Settings.CustomLocation.." && git clone ".. Url);
-            Common.execute_command("cd ".. Configuration.Pacman.Settings.CustomLocation.."/"..DirName.."/".."&& makepkg -si --noconfirm");
-            print(Colours.Green.. Colours.Bold.. "[LOG] Completed: ".. DirName.. Colours.Reset);
+            Common.remove_path(Configuration.Pacman.Settings.CustomLocation.."/"..DirName,
+                Configuration.Settings.SuperuserCommand, Configuration.Settings.RemovePathConfirmation);
+            Common.execute_command("cd ".. Configuration.Pacman.Settings.CustomLocation.." && ".. Value.CloneCmd);
+            install_custom_package(Configuration.Settings.SuperuserCommand, Configuration.Pacman.Settings.CustomLocation, Value)
         end
     end
     print(Colours.Bold.. Colours.Green.. "[LOG] Completed Custom Installations".. Colours.Reset);
