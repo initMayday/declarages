@@ -226,10 +226,10 @@ function Run.execute(Configuration)
             Value.RPC = Common.default_value(Value.RPC, false)
         end
         Value.CloneCmd = Common.default_value(Value.CloneCmd, "git clone ".. "https://aur.archlinux.org/"..Value.Base..".git")
-        Value.VersionCmd = Common.default_value(Value.VersionCmd, "source ./PKGBUILD && echo \"$pkgver\"")
+        Value.VersionCmd = Common.default_value(Value.VersionCmd, "source ./PKGBUILD && echo \"${pkgver:?FAIL}\"")
         Value.UpdateRemoteCmd = Common.default_value(Value.UpdateRemoteCmd, "git reset --hard && git pull")
         Value.PrepareCmd = Common.default_value(Value.PrepareCmd, "makepkg -o")
-        Value.BuildCmd = Common.default_value(Value.BuildCmd, "makepkg -s --noconfirm")
+        Value.BuildCmd = Common.default_value(Value.BuildCmd, "makepkg -sf --noconfirm")
         table.insert(NewTable, Value)
     end
     Configuration.Pacman.Custom = NewTable
