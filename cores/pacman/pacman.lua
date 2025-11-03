@@ -226,7 +226,8 @@ function Run.execute(Configuration)
             Value.RPC = Common.default_value(Value.RPC, false)
         end
         Value.CloneCmd = Common.default_value(Value.CloneCmd, "git clone ".. "https://aur.archlinux.org/"..Value.Base..".git")
-        Value.VersionCmd = Common.default_value(Value.VersionCmd, "source ./PKGBUILD && echo \"${pkgver:?FAIL}\"")
+        Value.VersionCmd = Common.default_value(Value.VersionCmd,
+            "makepkg --printsrcinfo | awk -F ' = ' '/pkgver/ {print $2}' || { echo \"FAIL\"; exit 1; }")
         Value.UpdateRemoteCmd = Common.default_value(Value.UpdateRemoteCmd, "git reset --hard && git pull")
         Value.PrepareCmd = Common.default_value(Value.PrepareCmd, "makepkg -o")
         Value.BuildCmd = Common.default_value(Value.BuildCmd, "makepkg -sf --noconfirm")
