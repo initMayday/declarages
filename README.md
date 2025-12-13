@@ -46,8 +46,26 @@ local Configuration = {
             "vscodium-bin",
  
             --> Advanced Custom
-            { Base = "symlink-manager", Sub = {"symlink-manager-git"}, Url = "https://github.com/initMayday/symlink-manager.git"},
-            { Base = "declarages", Sub = {"declarages-git"}, Url = "https://github.com/initMayday/declarages.git"},
+
+            -- Here are all the possible configuration options to set.
+            -- Setting any variable listed below RPC, sets RPC to false. RPC is
+            -- enabled by default. You will not commonly need to set these commands
+            -- these overrides exist for extreme cases
+            {
+                Base = "",
+                Sub = {},
+                RPC = true,
+                VersionCmd = "",
+                UpdateRemoteCmd = "",
+                PrepareCmd = "",
+                CloneCmd = "",
+                BuildCmd = "",
+            },]]
+
+            -- An example where RPC isn't being used since CloneCmd is being set. You may
+            -- also want to disable RPC for -git packages as maintainers on the AUR aren't
+            -- required to keep the AUR package version up to date.
+	        { Base = "Rust-VPN-Handler", Sub = {"vpn-handler-git"}, CloneCmd = "git clone https://github.com/initMayday/Rust-VPN-Handler"},
         },
 
         Ignore = {
@@ -107,5 +125,5 @@ local Configuration = {
 [Arch User Repository](https://aur.archlinux.org/packages/declarages)
 
 ##  Licensing
-Declarages utilises the CC BY-NC-SA 4.0 license, following this [interpretation](https://github.com/initMayday/licensing/blob/master/CC-BY-NC-SA.md).
-You can purchase the program for 5GBP (or equivalent) [here](https://github.com/initMayday/licensing/blob/master/payment.md).`
+Declarages is licensed under `AGPL-3.0-or-later`  
+You can purchase the program for 5GBP (or equivalent) [here](https://github.com/initMayday/licensing/blob/master/payment.md)
