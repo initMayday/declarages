@@ -2,9 +2,10 @@
 By initMayday 
 
 ## Introduction
-- Declarages (declarative packages) allows you to decelaratively manage your packages, through a simple lua configuration file!
-- Each package manager is managed by a **core**. For example, arch packages are managed via the pacman core.
-- Cores are individual scripts that are located within the "cores" folder, allowing them to be easily extensible. Multiple cores can be enabled at one time, for example you can enable both the pacman and flatpak core in order to declaratively manage both pacman and flatpak packages.
+Declarages (declarative packages) allows you to decelaratively manage your packages, through a simple lua configuration file!  
+
+Each package manager is managed by a **core**. For example, arch packages are managed via the pacman core.
+Cores are individual scripts that are located within the "cores" folder, allowing them to be easily extensible. Multiple cores can be enabled at one time, for example you can enable both the pacman and flatpak core in order to declaratively manage both pacman and flatpak packages.
 
 ## Usage & Supported Cores
 To run the program, please run declarages /the/directory/to/the/file/theconfigurationfile.lua. If no argument is provided, it will be assumed that there is a packages.lua file in the directory you are running the program from.
@@ -122,7 +123,9 @@ local Configuration = {
 - Ignore Table: Packages that are unmanaged by this core. These packages will be ignored, and not processed.
 
 ## Packages
-[Arch User Repository](https://aur.archlinux.org/packages/declarages)
+| Repo | Link |
+| -----| ---- |
+| Arch User Repository | https://aur.archlinux.org/packages/declarages |
 
 ##  Licensing
 The projects's source code is licensed under `AGPL-3.0-or-later`  
