@@ -4,24 +4,13 @@ local Common = require("common");
 
 local TotalStartTime = Common.execute_command(Common.DateCommand);
 
---> Decipher argument path
-local FileName = "packages";
-if arg[1] ~= nil then
-    FileName = arg[1]:match("([^/]+)$"):gsub("%.lua$", "")
-    local Directory = arg[1]:match("^(.*)/").. "/"
-    package.path = package.path .. ";" .. Directory .. "/?.lua"
-else
-    print("[ERROR] You must specify the path of the configuration file")
-    os.exit(-1)
-end
-
-local Configuration = require(FileName);
+local Configuration = dofile(arg[1] or "packages.lua");
 local Colours = require("colours")
 
 if Configuration.Settings.SuperuserCommand ~= "" then Configuration.Settings.SuperuserCommand = Configuration.Settings.SuperuserCommand.. " "; end
 
 print(Colours.Blue.. "[ENTER] Beginning".. Colours.Reset);
-for Index, Value in pairs(Configuration["Settings"]["Cores"]) do
+for _, Value in pairs(Configuration["Settings"]["Cores"]) do
     local StartTime = Common.execute_command(Common.DateCommand);
     Value = string.lower(Value);
     local Core = require("cores/"..Value.."/"..Value);

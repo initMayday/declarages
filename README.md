@@ -12,7 +12,7 @@ To run the program, please run declarages /the/directory/to/the/file/theconfigur
 
 **Default (Base configuration)**
 ```lua
-local Configuration = {
+return {
     Settings = {
         WarnOnPackageRemovalAbove = 5;
         SuperuserCommand = "sudo";
@@ -33,7 +33,7 @@ local Configuration = {
 
 **Pacman Core**
 ```lua
-local Configuration = {
+return {
     Pacman = {
        Primary = {
         "base",
@@ -87,7 +87,7 @@ local Configuration = {
 
 **Flatpak Core**
 ```lua
-local Configuration = {
+return {
     Flatpak = {
         Primary = {
             "com.valvesoftware.Steam",
@@ -105,7 +105,7 @@ local Configuration = {
 
 **Nix Core**
 ```lua
-local Configuration = {
+return {
     Nix = {
         Primary = {
             "librewolf",
