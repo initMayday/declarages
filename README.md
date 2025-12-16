@@ -1,9 +1,7 @@
 # Declarages
-By initMayday 
+Declarages (declarative packages) allows you to decelaratively manage your packages, through a simple lua configuration file!  
 
 ## Introduction
-#### Declarages (declarative packages) allows you to decelaratively manage your packages, through a simple lua configuration file!  
-
 Each package manager is managed by a **core**. For example, arch packages are managed via the pacman core.
 Cores are individual scripts that are located within the "cores" folder, allowing them to be easily extensible. Multiple cores can be enabled at one time, for example you can enable both the pacman and flatpak core in order to declaratively manage both pacman and flatpak packages.
 
