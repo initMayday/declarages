@@ -2,15 +2,16 @@
 By initMayday 
 
 ## Introduction
-Declarages (declarative packages) allows you to decelaratively manage your packages, through a simple lua configuration file!  
+#### Declarages (declarative packages) allows you to decelaratively manage your packages, through a simple lua configuration file!  
 
 Each package manager is managed by a **core**. For example, arch packages are managed via the pacman core.
 Cores are individual scripts that are located within the "cores" folder, allowing them to be easily extensible. Multiple cores can be enabled at one time, for example you can enable both the pacman and flatpak core in order to declaratively manage both pacman and flatpak packages.
 
-## Usage & Supported Cores
+## Usage
 To run the program, please run declarages /the/directory/to/the/file/theconfigurationfile.lua. If no argument is provided, it will be assumed that there is a packages.lua file in the directory you are running the program from.
 
-**Default (Base configuration)**
+## Base Configuration
+Your lua configuration file must return a table. From here on, that table will be referred to as the root table. The root table must contain a Settings table, specifying all of the following options:
 ```lua
 return {
     Settings = {
@@ -18,114 +19,31 @@ return {
         SuperuserCommand = "sudo";
         AddPathConfirmation = true;
         RemovePathConfirmation = true;
-        Purchased = false;
+        --> Never read, just a nudge to purchase the program if it useful to you
+        Purchased = false; 
+        --> Which cores you want to use. See the documentation below
+        --> to see how to configure each core
         Cores = { "Pacman", "Flatpak", "Nix" }
     }
 }
 ```
-- WarnOnPackageRemovalAbove: Will ask you to confirm removal of packages if the number of packages to remove is above the specified number (integer)
-- AddPathConfirmation:  Will ask you to allow the creation of the path at the specified directory (bool: true / false)
-- RemovePathConfirmation:  Will ask you to remove the creation of the path at the specified directory (bool: true / false)
-- SuperuserCommand: Prepends the command to the bash commands that the program runs (string: eg. "sudo", "doas")
-- RandomActivationMessage: Enables or disables the random message upon running the program to purchase a license (bool: true / false)
-- Purchased: Nudge to purchase the program, if it is useful to you. This is purely visual and the program never reads this variable.
-- Cores: List the cores you want to use & run, see the options for cores below (string: array)
 
-**Pacman Core**
-```lua
-return {
-    Pacman = {
-       Primary = {
-        "base",
-        "base-devel",
-        "git",
-        "grub",
-       },
+## Cores Configuration
+Alongside the Settings table, you must also provide a table for the configuration of any core you use, in the root table. See the table below for information on how to configure each core, with examplles.
+| Core | Configuration |
+| :--: | :--: |
+| Pacman | [Docs](cores/pacman/README.md) |
+| Flatpak | [Docs](cores/flatpak/README.md) |
+| Nix | [Docs](cores/nix/README.md) |
 
-       Custom = {
-            --> Simple Custom
-            "vscodium-bin",
- 
-            --> Advanced Custom
-
-            -- Here are all the possible configuration options to set.
-            -- Setting any variable listed below RPC, sets RPC to false. RPC is
-            -- enabled by default. You will not commonly need to set these commands
-            -- these overrides exist for extreme cases
-            {
-                Base = "",
-                Sub = {},
-                RPC = true,
-                VersionCmd = "",
-                UpdateRemoteCmd = "",
-                PrepareCmd = "",
-                CloneCmd = "",
-                BuildCmd = "",
-            },]]
-
-            -- An example where RPC isn't being used since CloneCmd is being set. You may
-            -- also want to disable RPC for -git packages as maintainers on the AUR aren't
-            -- required to keep the AUR package version up to date.
-	        { Base = "Rust-VPN-Handler", Sub = {"vpn-handler-git"}, CloneCmd = "git clone https://github.com/initMayday/Rust-VPN-Handler"},
-        },
-
-        Ignore = {
-            "kicad",
-        },
-
-        Settings = {
-            CustomLocation = "/home/user/.aur/",
-        },
-    },
-}
-```
-- Pacman Table: Contained within Configuration
-- Primary Table: List packages (to be installed via pacman directly) as strings that you want installed on the system.
-- Custom Table: Specifying the package just as a string assumes that that the string is the only package installed from the PKGBUILD it clones. It is assumed that the package is in the AUR. You can optionally choose to insert a table instead. This is required if the PKGBUILD that is cloned has multiple sub-packages that are installed, ie. you must list all the packages the PKGBUILD installs in sub-packages (including the base package name if applicable. This also works for the primary table, but I have not seen a situation where it is needed, but it is there). The URL can also be specified to change where the PKGBUILD is pulled from, allowing packages from outside the AUR to be installed as depicted. Please note that this URL is only read from upon cloning - it is not used again and therefore if you wish to change the URL you should remove the package, rebuild and add the new package.
-- Ignore Table: Packages that are unmanaged by this core. These packages will be ignored, and not processed.
-- Settings Table: CustomLocation: Installation directory for AUR or Custom packages - **please change user to your username**
-
-**Flatpak Core**
-```lua
-return {
-    Flatpak = {
-        Primary = {
-            "com.valvesoftware.Steam",
-        },
-
-        Ignore = {
-            "org.kicad.KiCad",
-        },
-    }
-}
-```
-- Flatpak Table: Contained within Configuration.
-- Primary Table: List flatpaks as strings that you want installed on the system.
-- Ignore Table: Packages that are unmanaged by this core. These packages will be ignored, and not processed.
-
-**Nix Core**
-```lua
-return {
-    Nix = {
-        Primary = {
-            "librewolf",
-            { Base = "kdePackages.konsole", Sub  = "konsole" }
-        },
-
-        Ignore = {
-            "firefox"
-        },
-    }
-}
-```
-- Nix Table: Contained within Configuration.
-- Primary Table: List nix packages as strings that you want installed on the system. If the package has a different name on nixpkgs than when installed onto your system (as for example, with konsole, you need to do nix profile add kdePackages.konsole, but when on your system, it is just konsole), then use a table, with Base and Sub values. The Base should be set equal to the name of the package to install, and the Sub should be set equal to the package's name when installed. Note that the value of Sub is a string, and not a table like in the pacman core.
-- Ignore Table: Packages that are unmanaged by this core. These packages will be ignored, and not processed.
 
 ## Packages
-| Repo | Link |
-| -----| ---- |
-| Arch User Repository | https://aur.archlinux.org/packages/declarages |
+| Repo | Source |
+| :--: | :--: |
+| Arch User Repository | [Link](https://aur.archlinux.org/packages/declarages) |
+
+## Contributing
+All cores run independently, meaning any additional core should be easily integrateable! Simply create a folder in cores with the [name], and then a subsequent [name].lua in that rolder with a README.md documenting it. That core can then be dynamically ran, for testing and management. Please keep dependencies (not including the package manager itself) minimal, and where possible re-utilise existing dependencies in the rockspec file. If you have any questions, feel free to contact me directly, or open a discussion. Thanks!
 
 ##  Licensing
 The projects's source code is licensed under `AGPL-3.0-or-later`  
