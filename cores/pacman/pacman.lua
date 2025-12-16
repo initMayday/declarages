@@ -1,8 +1,8 @@
 local Luv = require("luv")
-local Json = require("lunajson")
+local Json = require("lua-cjson")
+--local Inspect = require("inspect")
 local Common = require("common")
 local Colours = require("colours")
-local PrintTable = require("print_table")
 local Run = {};
 
 local function get_sub_packages(input)
