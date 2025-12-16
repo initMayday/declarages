@@ -125,10 +125,10 @@ function Run.execute(Configuration)
     if Confirmation == true and #PackagesToRemove > 0 then
         --> Need to check if the packages are dependencies of other packages before attempting removal
         for Index, Value in ipairs(PackagesToRemove) do
-            local DependenciesRaw = Common.execute_command("pactree -r --optional=0 --depth=1 -l ".. Value);
+            local DependenciesRaw = Common.execute_command(string.format("pacman -Qi %s | awk -F':' '/^Required By/ { print substr($2, 2) }'", Value));
 
             local CanBeRemoved = true;
-            for Package in DependenciesRaw:gmatch("([^\n]+)") do
+            for Package in DependenciesRaw:gmatch("%S+") do
                 if Package ~= "" then
                     --> Check if the package that depends on this package is part of the packages we are removing
                     local Hit = false;

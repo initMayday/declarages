@@ -6,8 +6,8 @@ source = {
 
 dependencies = {
     "luv",
-    "lunajson",
-    "print_table",
+    "lua-cjson",
+    "inspect",
 }
 
 build = {
