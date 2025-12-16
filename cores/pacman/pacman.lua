@@ -1,5 +1,5 @@
 local Luv = require("luv")
-local Json = require("lua-cjson")
+local Json = require("cjson")
 --local Inspect = require("inspect")
 local Common = require("common")
 local Colours = require("colours")
@@ -129,7 +129,7 @@ function Run.execute(Configuration)
 
             local CanBeRemoved = true;
             for Package in DependenciesRaw:gmatch("%S+") do
-                if Package ~= "" then
+                if Package ~= "None" then
                     --> Check if the package that depends on this package is part of the packages we are removing
                     local Hit = false;
                     for _, Value2 in ipairs(PackagesToRemove) do
